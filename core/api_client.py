@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 DEFAULT_TOKEN_PATH = Path.home() / ".faktur" / "token.json"
-DEFAULT_BASE_URL = "http://localhost:8000"
+DEFAULT_BASE_URL = "http://localhost:3000"
 
 
 class ApiClient:
