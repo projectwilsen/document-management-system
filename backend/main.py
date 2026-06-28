@@ -4,12 +4,13 @@ from backend.auth.router import router as auth_router
 from backend.me.router import router as me_router
 from backend.usage.router import router as usage_router
 from backend.admin.router import router as admin_router
+from backend.config import settings
 
 app = FastAPI(title="Faktur SaaS API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[settings.dashboard_url],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
