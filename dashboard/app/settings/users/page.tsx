@@ -50,13 +50,13 @@ export default function UsersPage() {
     }
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-950">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-950">
       <NavBar />
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-gray-900 rounded-xl shadow p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-semibold text-lg">Team Members</h2>
             <button onClick={handleInvite}
@@ -68,11 +68,11 @@ export default function UsersPage() {
           {error && <p className="text-red-500 text-sm mb-3">{error}</p>}
 
           {inviteUrl && (
-            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-700 mb-2 font-medium">Share this invite link (expires in 7 days):</p>
+            <div className="mb-4 p-3 bg-blue-950 rounded-lg border border-blue-800">
+              <p className="text-sm text-blue-300 mb-2 font-medium">Share this invite link (expires in 7 days):</p>
               <div className="flex gap-2">
                 <input readOnly value={inviteUrl}
-                  className="flex-1 text-xs border rounded px-2 py-1 bg-white text-gray-700" />
+                  className="flex-1 text-xs border border-gray-600 rounded px-2 py-1 bg-gray-800 text-gray-100" />
                 <button onClick={copyLink}
                   className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">
                   {copied ? "Copied!" : "Copy"}
@@ -83,16 +83,16 @@ export default function UsersPage() {
 
           <div className="space-y-2">
             {users.map(u => (
-              <div key={u.id} className="flex justify-between items-center p-3 border rounded-lg">
+              <div key={u.id} className="flex justify-between items-center p-3 border border-gray-700 rounded-lg">
                 <div>
                   <span className="font-medium text-sm">{u.email}</span>
-                  <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${u.role === "owner" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>
+                  <span className={`ml-2 text-xs px-2 py-0.5 rounded-full ${u.role === "owner" ? "bg-blue-900 text-blue-300" : "bg-gray-700 text-gray-300"}`}>
                     {u.role}
                   </span>
                 </div>
                 {u.role !== "owner" && (
                   <button onClick={() => handleRemove(u.id)}
-                    className="text-red-500 text-sm hover:text-red-700">
+                    className="text-red-500 text-sm hover:text-red-400">
                     Remove
                   </button>
                 )}

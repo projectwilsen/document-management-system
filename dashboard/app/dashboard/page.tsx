@@ -19,33 +19,33 @@ export default function DashboardPage() {
     api.me().then(setMe).catch(() => {});
   }, []);
 
-  if (loading || !me) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading || !me) return <div className="min-h-screen flex items-center justify-center bg-gray-950">Loading...</div>;
 
   const { quota, plan } = me;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-950">
       <NavBar />
       <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-gray-900 rounded-xl shadow p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="font-semibold text-lg capitalize">{plan} Plan</h2>
             <a href="/billing" className="text-blue-600 text-sm hover:underline">Upgrade Plan →</a>
           </div>
-          <p className="text-sm text-gray-500 mb-3">Documents this billing period</p>
+          <p className="text-sm text-gray-400 mb-3">Documents this billing period</p>
           <UsageBar used={quota.used} limit={quota.limit} />
           {quota.remaining === 0 && (
-            <p className="mt-3 text-sm text-red-600">
+            <p className="mt-3 text-sm text-red-500">
               You&apos;ve reached your plan limit.{" "}
               <a href="/billing" className="underline">Contact us to upgrade.</a>
             </p>
           )}
         </div>
 
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-gray-900 rounded-xl shadow p-6">
           <h2 className="font-semibold text-lg mb-4">Account</h2>
-          <p className="text-sm text-gray-600">Email: <span className="font-medium">{me.email}</span></p>
-          <p className="text-sm text-gray-600 mt-1">Role: <span className="font-medium capitalize">{me.role}</span></p>
+          <p className="text-sm text-gray-300">Email: <span className="font-medium">{me.email}</span></p>
+          <p className="text-sm text-gray-300 mt-1">Role: <span className="font-medium capitalize">{me.role}</span></p>
         </div>
       </div>
     </div>

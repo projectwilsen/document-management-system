@@ -27,23 +27,23 @@ export default function BillingPage() {
     api.me().then(setMe).catch(() => {});
   }, []);
 
-  if (loading || !me) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (loading || !me) return <div className="min-h-screen flex items-center justify-center bg-gray-950">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-950">
       <NavBar />
       <div className="max-w-xl mx-auto px-4 py-8 space-y-6">
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-gray-900 rounded-xl shadow p-6">
           <h2 className="font-semibold text-lg mb-1">Current Plan</h2>
-          <p className="text-2xl font-bold capitalize text-blue-600 mb-1">{me.plan}</p>
-          <p className="text-sm text-gray-500">
+          <p className="text-2xl font-bold capitalize text-blue-500 mb-1">{me.plan}</p>
+          <p className="text-sm text-gray-400">
             {me.quota.limit === null ? "Unlimited documents" : `${me.quota.limit} docs / month`}
           </p>
         </div>
 
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-gray-900 rounded-xl shadow p-6">
           <h2 className="font-semibold text-lg mb-4">Want to upgrade?</h2>
-          <p className="text-sm text-gray-600 mb-4">
+          <p className="text-sm text-gray-300 mb-4">
             Contact us to activate your new plan. We&apos;ll upgrade your account within 1 business day.
           </p>
           <div className="flex gap-3">
@@ -59,15 +59,15 @@ export default function BillingPage() {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow p-6">
+        <div className="bg-gray-900 rounded-xl shadow p-6">
           <h2 className="font-semibold text-lg mb-4">Available Plans</h2>
           <div className="space-y-3">
             {PLANS.map(p => (
-              <div key={p.key} className={`flex justify-between items-center p-3 rounded-lg border ${me.plan === p.key ? "border-blue-500 bg-blue-50" : "border-gray-200"}`}>
+              <div key={p.key} className={`flex justify-between items-center p-3 rounded-lg border ${me.plan === p.key ? "border-blue-500 bg-blue-950" : "border-gray-700"}`}>
                 <div>
                   <span className="font-medium">{p.label}</span>
-                  <span className="text-sm text-gray-500 ml-2">{p.limit}</span>
-                  {me.plan === p.key && <span className="ml-2 text-xs text-blue-600 font-medium">Current</span>}
+                  <span className="text-sm text-gray-400 ml-2">{p.limit}</span>
+                  {me.plan === p.key && <span className="ml-2 text-xs text-blue-400 font-medium">Current</span>}
                 </div>
                 <span className="text-sm font-medium">{p.price}</span>
               </div>
