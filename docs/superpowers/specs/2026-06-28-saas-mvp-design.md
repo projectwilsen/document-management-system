@@ -13,17 +13,20 @@ Transform the existing desktop app into a SaaS product using a **Desktop-first H
 - Subscription plans limit how many documents can be processed per billing period
 - Quota is enforced server-side (backend is the source of truth)
 - PDF files never leave the user's machine
-- Web dashboard for account management, billing, and org user management
+- Web dashboard for account management, plan info, and org user management
 - Data model supports multi-tenant upgrade (goal C) without a schema migration
 
 ## Non-Goals (MVP)
 
+- Payment gateway integration — no Stripe, Xendit, Midtrans, or any automated billing
 - Email verification flow
-- Password reset (users are directed to web dashboard)
+- Password reset via email (users are directed to contact admin)
 - Web-based PDF processing / upload
 - Multiple organizations per user
 - Webhook integrations
 - Analytics beyond usage count
+
+**Billing in MVP is manual:** user contacts owner via WA/email → owner updates plan directly in the database. Payment gateway is a post-MVP concern once there are paying customers to justify the integration.
 
 ## Architecture
 
@@ -45,7 +48,7 @@ Transform the existing desktop app into a SaaS product using a **Desktop-first H
 │   • Login / register     │         │   organizations                 │
 │   • Account & plan info  │         │   users                         │
 │   • Usage stats          │         │   subscriptions                 │
-│   • Billing (Stripe)     │         │   usage_logs                    │
+│   • Upgrade contact info │         │   usage_logs                    │
 │   • Org user management  │         │                                 │
 └──────────────────────────┘         └─────────────────────────────────┘
 ```
@@ -73,7 +76,7 @@ subscriptions
   doc_limit       int         -- NULL = unlimited (pro)
   period_start    date
   period_end      date
-  stripe_sub_id   text        -- nullable, set on paid plans
+  -- payment_ref  text        -- reserved for post-MVP payment gateway reference
 
 usage_logs
   id              uuid        PK
@@ -87,11 +90,20 @@ usage_logs
 
 **Plan tiers (example — final pricing TBD by client feedback):**
 
-| Plan    | Doc limit / month | Notes           |
-|---------|-------------------|-----------------|
-| Free    | 50                | No Stripe needed |
-| Starter | 500               | Stripe required  |
-| Pro     | Unlimited         | Stripe required  |
+| Plan    | Doc limit / month | How activated                        |
+|---------|-------------------|--------------------------------------|
+| Free    | 50                | Auto on register                     |
+| Starter | 500               | Owner manually updates DB after payment |
+| Pro     | Unlimited         | Owner manually updates DB after payment |
+
+**How manual plan upgrade works:**
+```sql
+-- Owner runs this after receiving payment (WA/transfer):
+UPDATE subscriptions
+SET plan = 'starter', doc_limit = 500,
+    period_start = '2026-07-01', period_end = '2026-07-31'
+WHERE organization_id = '<org_id>';
+```
 
 **Multi-tenancy note:** On signup, the backend silently auto-creates an `organization` and links the new user as `owner`. The user never sees the word "organization" in the MVP UI. When multi-user is added later, the schema requires no changes — only org management UI is new.
 
@@ -127,14 +139,14 @@ backend/
 
 ### Endpoints used by the web dashboard
 
-| Method | Endpoint              | Purpose                            |
-|--------|-----------------------|------------------------------------|
-| POST   | /auth/register        | Create user + auto-create org      |
-| POST   | /auth/refresh         | Rotate access token                |
-| GET    | /me                   | Profile + plan info                |
-| GET    | /admin/users          | List org members (owner only)      |
-| POST   | /admin/users/invite   | Create pending user + return invite link (no email service needed in MVP) |
-| DELETE | /admin/users/{id}     | Remove member (owner only)         |
+| Method | Endpoint              | Purpose                                                         |
+|--------|-----------------------|-----------------------------------------------------------------|
+| POST   | /auth/register        | Create user + auto-create org                                   |
+| POST   | /auth/refresh         | Rotate access token                                             |
+| GET    | /me                   | Profile + plan info                                             |
+| GET    | /admin/users          | List org members (owner only)                                   |
+| POST   | /admin/users/invite   | Create pending user + return invite link (no email needed)      |
+| DELETE | /admin/users/{id}     | Remove member (owner only)                                      |
 
 ### Auth
 
@@ -148,7 +160,7 @@ The existing main UI is **unchanged**. Two additions only:
 
 ### Login screen (`ui/login.py`)
 
-Shown on startup if no valid token is found locally. Email + password form. Register and password reset open the web dashboard in the browser — no need to build those forms in the desktop app.
+Shown on startup if no valid token is found locally. Email + password form. Register and password reset open the web dashboard in the browser.
 
 ```
 ┌──────────────────────────────────────┐
@@ -178,7 +190,7 @@ Added at the bottom of the existing main window:
 └──────────────────────────────────────────────────────┘
 ```
 
-"Upgrade →" opens the web dashboard billing page in the browser.
+"Upgrade →" opens the `/billing` page in the browser, which shows contact info for upgrading (WA link / email). No payment gateway.
 
 ### Modified Sync flow
 
@@ -188,7 +200,7 @@ User clicks Sync
       ▼
 GET /usage/quota
       │
-      ├── remaining = 0 → show "Plan limit reached. Upgrade to continue." → stop
+      ├── remaining = 0 → show "Plan limit reached. Contact us to upgrade." → stop
       │
       └── remaining > 0 → run rename_faktur() as before
                 │
@@ -213,16 +225,16 @@ Token stored at `~/.faktur/token.json`: `{ access_token, refresh_token, expires_
 
 ## Web Dashboard (Next.js)
 
-5 pages. No file processing — control panel only.
+6 pages. No file processing, no payment gateway — control panel only.
 
 ### Pages
 
 ```
 /login              ← email + password
 /register           ← name, email, password
-/forgot-password    ← email input; shows "contact your admin" message (email reset is post-MVP)
+/forgot-password    ← shows "contact your admin" message (email reset is post-MVP)
 /dashboard          ← usage bar + recent activity log
-/billing            ← current plan + Stripe Customer Portal link
+/billing            ← current plan info + WhatsApp/email contact to upgrade (NO payment gateway)
 /settings/users     ← list members, invite link, remove (owner only)
 ```
 
@@ -233,7 +245,7 @@ Token stored at `~/.faktur/token.json`: `{ access_token, refresh_token, expires_
 │  Rename Faktur Pajak          [Settings] [Logout]   │
 ├─────────────────────────────────────────────────────┤
 │                                                     │
-│  Starter Plan                    [Upgrade Plan →]   │
+│  Starter Plan                   [Upgrade Plan →]    │
 │                                                     │
 │  Documents this period                              │
 │  ████████████░░░░░░░░  312 / 500                   │
@@ -247,12 +259,31 @@ Token stored at `~/.faktur/token.json`: `{ access_token, refresh_token, expires_
 └─────────────────────────────────────────────────────┘
 ```
 
+### Billing page (no payment gateway)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  Current Plan: Starter  •  500 docs/month           │
+│  Period: 1 Jul – 31 Jul 2026                        │
+│                                                     │
+│  Want to upgrade?                                   │
+│  Contact us to activate your new plan:              │
+│                                                     │
+│  [💬 WhatsApp]   [📧 Email]                         │
+│                                                     │
+│  Available plans:                                   │
+│  Free      50 docs/month    Rp 0                    │
+│  Starter  500 docs/month    Rp X                    │
+│  Pro      Unlimited         Rp Y                    │
+└─────────────────────────────────────────────────────┘
+```
+
 ### Tech choices
 
 - Next.js 14 App Router
 - Tailwind CSS
-- JWT in `Authorization` header (not cookies — simpler for MVP)
-- Stripe Customer Portal for billing (no custom billing UI)
+- JWT in `Authorization` header (simpler for MVP)
+- No payment gateway library
 
 ### File structure
 
@@ -273,14 +304,13 @@ dashboard/
 
 ## Deployment
 
-| Service    | Platform              |
-|------------|-----------------------|
-| FastAPI    | Render (free tier)    |
-| Next.js    | Vercel (free tier)    |
-| Database   | Neon (free tier)      |
-| Billing    | Stripe                |
+| Service    | Platform           | Cost      |
+|------------|--------------------|-----------|
+| FastAPI    | Render (free tier) | Rp 0      |
+| Next.js    | Vercel (free tier) | Rp 0      |
+| Database   | Neon (free tier)   | Rp 0      |
 
-All three free tiers are sufficient for MVP. Upgrade when first paying customers arrive.
+No payment gateway account needed for MVP. Total infrastructure cost: Rp 0.
 
 ## Repo Structure
 
