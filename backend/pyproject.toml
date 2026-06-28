@@ -10,6 +10,7 @@ dependencies = [
     "alembic>=1.13",
     "python-jose[cryptography]>=3.3",
     "passlib[bcrypt]>=1.7",
+    "bcrypt<5",
     "pydantic-settings>=2.3",
     "pydantic[email]>=2.0",
 ]
@@ -24,6 +25,7 @@ test = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 
 [tool.setuptools.packages.find]
