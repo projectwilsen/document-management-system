@@ -6,20 +6,24 @@ from tkinter import filedialog
 import customtkinter as ctk
 
 from core.rename_faktur import rename_faktur
+from core.api_client import ApiClient
+from ui.status_bar import StatusBar
 
 
 class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("Rename Faktur Pajak Coretax")
-        self.geometry("720x520")
-        self.minsize(600, 420)
+        self.geometry("720x560")
+        self.minsize(600, 460)
 
         ctk.set_appearance_mode("System")
         ctk.set_default_color_theme("blue")
 
         self._log_queue: queue.Queue = queue.Queue()
+        self._api = ApiClient()
         self._build_ui()
+        self._check_auth()
 
     def _build_ui(self):
         self.grid_columnconfigure(0, weight=1)
@@ -85,6 +89,34 @@ class App(ctk.CTk):
         self._summary_label = ctk.CTkLabel(self, text="", anchor="w")
         self._summary_label.grid(row=4, column=0, padx=20, pady=(2, 16), sticky="w")
 
+        # Status bar (plan / quota)
+        self._status_bar = StatusBar(self)
+        self._status_bar.grid(row=5, column=0, padx=0, pady=0, sticky="ew")
+
+    # --- auth / quota ---
+
+    def _check_auth(self):
+        if not self._api.is_authenticated():
+            from ui.login import LoginWindow
+            LoginWindow(self._api, on_success=self._on_login_success)
+        else:
+            self._refresh_quota()
+
+    def _on_login_success(self):
+        self._refresh_quota()
+
+    def _refresh_quota(self):
+        def fetch():
+            try:
+                me = self._api.get_me()
+                quota = me["quota"]
+                self.after(0, lambda: self._status_bar.update_quota(
+                    plan=me["plan"], used=quota["used"], limit=quota["limit"]
+                ))
+            except Exception:
+                self.after(0, lambda: self._status_bar.set_error("Could not load plan info"))
+        threading.Thread(target=fetch, daemon=True).start()
+
     # --- folder pickers ---
 
     def _browse_source(self):
@@ -135,6 +167,11 @@ class App(ctk.CTk):
                 preview=preview,
                 log_callback=lambda msg: self._log_queue.put(("log", msg)),
             )
+            if not preview and result["berhasil"] > 0:
+                try:
+                    self._api.report_usage(result["berhasil"])
+                except Exception as e:
+                    self._log_queue.put(("log", f"⚠️  Usage tidak tersync ke server: {e}"))
             self._log_queue.put(("done", result))
 
         threading.Thread(target=worker, daemon=True).start()
@@ -171,6 +208,7 @@ class App(ctk.CTk):
                         text=f"✅ Berhasil: {r['berhasil']}    ❌ Gagal: {r['gagal']}    ⏭  Dilewati: {r['skip']}"
                     )
                     self._set_buttons(enabled=True)
+                    self._refresh_quota()
                     return
         except Exception:
             pass
