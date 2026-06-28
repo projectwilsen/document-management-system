@@ -1,5 +1,5 @@
 import uuid
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError
@@ -7,7 +7,15 @@ from backend.database import get_db
 from backend.models import User
 from backend.auth.utils import decode_token
 
-bearer = HTTPBearer()
+
+class _Bearer403(HTTPBearer):
+    """HTTPBearer that raises 403 (not 401) when no credentials are provided."""
+
+    def make_not_authenticated_error(self) -> HTTPException:
+        return HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authenticated")
+
+
+bearer = _Bearer403()
 
 
 async def get_current_user(

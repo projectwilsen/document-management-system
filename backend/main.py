@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.auth.router import router as auth_router
+from backend.me.router import router as me_router
+from backend.usage.router import router as usage_router
 
 app = FastAPI(title="Faktur SaaS API")
 
@@ -13,3 +15,5 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(me_router)
+app.include_router(usage_router)
