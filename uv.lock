@@ -241,7 +241,7 @@ dev = [
 requires-dist = [
     { name = "customtkinter", specifier = ">=5.2" },
     { name = "pdfplumber", specifier = ">=0.11" },
-    { name = "requests", specifier = ">=2.34.2" },
+    { name = "requests", specifier = ">=2.32" },
 ]
 
 [package.metadata.requires-dev]

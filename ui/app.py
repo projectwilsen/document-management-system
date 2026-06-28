@@ -170,8 +170,8 @@ class App(ctk.CTk):
             if not preview and result["berhasil"] > 0:
                 try:
                     self._api.report_usage(result["berhasil"])
-                except Exception:
-                    pass
+                except Exception as e:
+                    self._log_queue.put(("log", f"⚠️  Usage tidak tersync ke server: {e}"))
             self._log_queue.put(("done", result))
 
         threading.Thread(target=worker, daemon=True).start()
