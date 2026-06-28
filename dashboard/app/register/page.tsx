@@ -3,12 +3,13 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { api } from "@/lib/api";
-import { saveTokens } from "@/lib/auth";
+import { saveTokens, useAuth } from "@/lib/auth";
 
 function RegisterForm() {
   const router = useRouter();
   const params = useSearchParams();
   const invite = params.get("invite") ?? undefined;
+  const { refresh } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,6 +24,7 @@ function RegisterForm() {
     try {
       const tokens = await api.register(email, password, invite ? undefined : name, invite);
       saveTokens(tokens.access_token, tokens.refresh_token);
+      await refresh();
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -32,27 +34,27 @@ function RegisterForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="bg-white p-8 rounded-xl shadow w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+      <div className="bg-gray-900 p-8 rounded-xl shadow w-full max-w-sm">
         <h1 className="text-2xl font-bold mb-2 text-center">Create Account</h1>
-        {invite && <p className="text-sm text-center text-green-600 mb-4">You&apos;ve been invited to join a team.</p>}
+        {invite && <p className="text-sm text-center text-green-500 mb-4">You&apos;ve been invited to join a team.</p>}
         <form onSubmit={handleSubmit} className="space-y-4">
           {!invite && (
             <div>
               <label className="block text-sm font-medium mb-1">Company / Org Name</label>
               <input type="text" value={name} onChange={e => setName(e.target.value)} required
-                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                className="w-full border border-gray-600 bg-gray-800 text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
             </div>
           )}
           <div>
             <label className="block text-sm font-medium mb-1">Email</label>
             <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border border-gray-600 bg-gray-800 text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Password</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-              className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              className="w-full border border-gray-600 bg-gray-800 text-gray-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
           </div>
           {error && <p className="text-red-500 text-sm">{error}</p>}
           <button type="submit" disabled={loading}
