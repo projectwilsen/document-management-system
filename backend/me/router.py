@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, desc
 from backend.database import get_db
 from backend.models import User, Subscription, UsageLog
 from backend.schemas import MeResponse, QuotaResponse
@@ -10,7 +10,12 @@ router = APIRouter(prefix="/me", tags=["me"])
 
 
 async def _quota(db: AsyncSession, user: User) -> tuple:
-    sub = (await db.execute(select(Subscription).where(Subscription.organization_id == user.organization_id))).scalar_one()
+    sub = (await db.execute(
+        select(Subscription)
+        .where(Subscription.organization_id == user.organization_id)
+        .order_by(desc(Subscription.period_end))
+        .limit(1)
+    )).scalar_one()
     used = (await db.execute(
         select(func.coalesce(func.sum(UsageLog.files_processed), 0))
         .where(UsageLog.organization_id == user.organization_id,

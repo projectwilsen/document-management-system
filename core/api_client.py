@@ -39,7 +39,7 @@ class ApiClient:
         return {"Authorization": f"Bearer {self._token['access_token']}"}
 
     def login(self, email: str, password: str) -> dict:
-        resp = requests.post(f"{self._base}/auth/login", json={"email": email, "password": password})
+        resp = requests.post(f"{self._base}/auth/login", json={"email": email, "password": password}, timeout=10)
         resp.raise_for_status()
         data = resp.json()
         expires_at = (datetime.now(timezone.utc) + timedelta(minutes=14)).isoformat()
@@ -47,12 +47,12 @@ class ApiClient:
         return data
 
     def get_me(self) -> dict:
-        resp = requests.get(f"{self._base}/me", headers=self._auth_headers())
+        resp = requests.get(f"{self._base}/me", headers=self._auth_headers(), timeout=10)
         resp.raise_for_status()
         return resp.json()
 
     def get_quota(self) -> dict:
-        resp = requests.get(f"{self._base}/usage/quota", headers=self._auth_headers())
+        resp = requests.get(f"{self._base}/usage/quota", headers=self._auth_headers(), timeout=10)
         resp.raise_for_status()
         return resp.json()
 
@@ -61,6 +61,7 @@ class ApiClient:
             f"{self._base}/usage/report",
             json={"files_processed": files_processed},
             headers=self._auth_headers(),
+            timeout=10,
         )
         resp.raise_for_status()
         return resp.json()
