@@ -33,7 +33,8 @@ async def register(body: RegisterRequest, invite: str | None = None, db: AsyncSe
         except (JWTError, ValueError, KeyError):
             raise HTTPException(status_code=400, detail="Invalid or expired invite link")
 
-        user = User(organization_id=org_id, email=body.email, password_hash=hash_password(body.password), role=Role.member)
+        import uuid
+        user = User(organization_id=uuid.UUID(org_id), email=body.email, password_hash=hash_password(body.password), role=Role.member)
         db.add(user)
         await db.commit()
         await db.refresh(user)
